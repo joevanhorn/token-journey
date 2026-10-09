@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Journey: examples and playground</title>
+<link rel="stylesheet" href="../viewer/token-journey.css">
+<style>
+  :root { color-scheme: light dark; --bg:#0a0d15; --fg:#e8ecf6; --mut:#9aa4c0; --line:#26304c; --card:#101623; --acc:#edb24a; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f1ece0; --fg:#262119; --mut:#5c5445; --line:#b9ad92; --card:#faf7f0; --acc:#8a5b12; } }
+  html[data-theme="light"] { --bg:#f1ece0; --fg:#262119; --mut:#5c5445; --line:#b9ad92; --card:#faf7f0; --acc:#8a5b12; }
+  html[data-theme="dark"] { --bg:#0a0d15; --fg:#e8ecf6; --mut:#9aa4c0; --line:#26304c; --card:#101623; --acc:#edb24a; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; }
+  .wrap { max-width:1180px; margin:0 auto; padding:28px 18px 48px; }
+  h1 { font-size:22px; margin:0 0 4px; } .lede { color:var(--mut); margin:0 0 22px; max-width:760px; }
+  .grid { display:grid; grid-template-columns:280px minmax(0,1fr); gap:20px; align-items:start; }
+  @media (max-width:860px) { .grid { grid-template-columns:1fr; } }
+  nav { display:flex; flex-direction:column; gap:6px; }
+  nav button { text-align:left; font:inherit; color:var(--fg); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:9px 12px; cursor:pointer; }
+  nav button[aria-current="true"] { border-color:var(--acc); }
+  nav button small { display:block; color:var(--mut); font-size:12px; }
+  .st { float:right; font-size:11px; font-family:ui-monospace,monospace; }
+  .st.allow { color:#2fae7b; } .st.deny, .st.refused { color:#e05a5e; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mut); margin:18px 0 8px; }
+  textarea { width:100%; min-height:140px; box-sizing:border-box; font:12px/1.4 ui-monospace,monospace; color:var(--fg); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px; }
+  .row { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .row button, .row label { font:inherit; font-size:13px; color:var(--fg); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer; }
+  .hint { color:var(--mut); font-size:12px; }
+  #drop.over { outline:2px dashed var(--acc); outline-offset:4px; }
+  .bar { display:flex; justify-content:flex-end; margin-bottom:10px; gap:8px; }
+  .bar select { font:inherit; font-size:13px; color:var(--fg); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:4px 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Token Journey</h1>
+  <p class="lede">See an auth flow as a story and as an animated sequence diagram. Pick an example, or paste or drop your own
+    trace (format: <code>docs/journey-format.md</code>). Everything renders locally; nothing is uploaded.</p>
+  <div class="grid">
+    <div>
+      <nav id="list" aria-label="Example journeys"></nav>
+      <h2>Your own trace</h2>
+      <div id="drop">
+        <textarea id="src" spellcheck="false" placeholder="Paste a journey JSON here, or drop a .json file on this box"></textarea>
+      </div>
+      <div class="row">
+        <button type="button" id="renderBtn">Render</button>
+        <label>Open file… <input type="file" id="file" accept=".json,application/json" hidden></label>
+      </div>
+      <p class="hint">Validation errors show in place of the journey, with the exact field that's wrong.</p>
+    </div>
+    <div>
+      <div class="bar">
+        <label class="hint" for="theme">Theme</label>
+        <select id="theme"><option value="auto">auto</option><option value="dark">dark</option><option value="light">light</option></select>
+      </div>
+      <div id="viewer"></div>
+    </div>
+  </div>
+</div>
+<script src="../viewer/token-journey.js"></script>
+<script>
+(function () {
+  var viewer = document.getElementById('viewer'), list = document.getElementById('list'), src = document.getElementById('src');
+  var themeSel = document.getElementById('theme');
+  var current = null, view = 'technical';
+
+  function show(journey) {
+    current = journey;
+    var ctl = TokenJourney.render(viewer, journey, { view: view, theme: themeSel.value });
+    // remember the user's last view choice across examples
+    viewer.addEventListener('click', function (e) {
+      if (e.target && e.target.closest && e.target.closest('.tj-views')) view = viewer.querySelector('.tj').getAttribute('data-view');
+    }, { once: true });
+    return ctl;
+  }
+  function renderText(txt) {
+    try { var j = JSON.parse(txt); show(j); }
+    catch (e) { viewer.innerHTML = ''; var p = document.createElement('div'); p.className = 'tj'; var m = document.createElement('div');
+      m.className = 'tj-error'; m.textContent = 'Not valid JSON: ' + e.message; p.appendChild(m); viewer.appendChild(p); }
+  }
+
+  fetch('journeys/index.json').then(function (r) { return r.json(); }).then(function (items) {
+    items.forEach(function (it, i) {
+      var b = document.createElement('button'); b.type = 'button';
+      var st = document.createElement('span'); st.className = 'st ' + it.status; st.textContent = it.status;
+      b.appendChild(st); b.appendChild(document.createTextNode(it.title));
+      var sm = document.createElement('small'); sm.textContent = it.subtitle; b.appendChild(sm);
+      b.addEventListener('click', function () {
+        [].forEach.call(list.children, function (c) { c.removeAttribute('aria-current'); });
+        b.setAttribute('aria-current', 'true');
+        fetch('journeys/' + it.file).then(function (r) { return r.text(); }).then(function (t) { src.value = t; renderText(t); location.hash = it.file.replace('.json', ''); });
+      });
+      list.appendChild(b);
+    });
+    var want = location.hash.slice(1), idx = Math.max(0, items.findIndex(function (it) { return it.file === want + '.json'; }));
+    if (list.children[idx]) list.children[idx].click();
+  }).catch(function () {
+    viewer.textContent = 'Could not load examples. Serve this folder over HTTP (browsers block fetch from file://): python3 -m http.server, then open http://localhost:8000/examples/';
+  });
+
+  document.getElementById('renderBtn').addEventListener('click', function () { renderText(src.value); });
+  document.getElementById('file').addEventListener('change', function (e) { var f = e.target.files[0]; if (f) f.text().then(function (t) { src.value = t; renderText(t); }); });
+  var drop = document.getElementById('drop');
+  drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
+  drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('over'); var f = e.dataTransfer.files[0]; if (f) f.text().then(function (t) { src.value = t; renderText(t); }); });
+  themeSel.addEventListener('change', function () { document.documentElement.setAttribute('data-theme', themeSel.value === 'auto' ? '' : themeSel.value); if (current) show(current); });
+})();
+</script>
+</body>
+</html>

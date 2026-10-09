@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "title": "Agent reads a ticket for Kim",
+  "actors": [
+    {
+      "id": "user",
+      "label": "Kim (user)",
+      "short": "USER",
+      "kind": "user"
+    },
+    {
+      "id": "agent",
+      "label": "AI agent",
+      "short": "AGENT",
+      "kind": "agent",
+      "description": "An MCP client, e.g. a coding assistant"
+    },
+    {
+      "id": "gw",
+      "label": "MCP gateway",
+      "short": "GATEWAY",
+      "kind": "gateway",
+      "description": "Brokers tokens for the agent"
+    },
+    {
+      "id": "idp",
+      "label": "Identity provider",
+      "short": "IDP",
+      "kind": "idp",
+      "sublabel": "org + resource AS"
+    },
+    {
+      "id": "api",
+      "label": "Ticket API",
+      "short": "API",
+      "kind": "resource",
+      "sublabel": "MCP server"
+    }
+  ],
+  "steps": [
+    {
+      "type": "message",
+      "from": "user",
+      "to": "agent",
+      "label": "ask agent",
+      "detail": "\"read ticket 42\"",
+      "story": {
+        "title": "You asked the agent",
+        "what": "Kim asked the agent to work with ticket 42.",
+        "why": "The agent has no rights of its own here. It acts strictly on Kim's behalf.",
+        "matters": "Every agent action traces back to a real person and inherits that person's limits."
+      }
+    },
+    {
+      "type": "message",
+      "from": "agent",
+      "to": "gw",
+      "label": "tools/call",
+      "tone": "info",
+      "detail": "tickets.read"
+    },
+    {
+      "type": "message",
+      "from": "gw",
+      "to": "idp",
+      "label": "ID-JAG request",
+      "tone": "info",
+      "detail": "grant=token-exchange",
+      "token": "user ⊕ agent",
+      "story": {
+        "title": "The gateway brokered the request to the identity provider",
+        "what": "The gateway presented Kim's identity and the agent's own credentials, asking for an Identity Assertion JWT (ID-JAG).",
+        "why": "An agent can't mint its own access. Only the identity provider issues tokens, and only after evaluating policy.",
+        "matters": "The exchange is the checkpoint: every agent action passes through policy before it can touch a resource."
+      }
+    },
+    {
+      "type": "event",
+      "at": "idp",
+      "label": "mints ID-JAG",
+      "tone": "info",
+      "token": "ID-JAG"
+    },
+    {
+      "type": "message",
+      "from": "gw",
+      "to": "idp",
+      "label": "token exchange",
+      "tone": "info",
+      "detail": "grant=jwt-bearer"
+    },
+    {
+      "type": "event",
+      "at": "idp",
+      "label": "mints token",
+      "tone": "ok",
+      "token": "scoped token",
+      "story": {
+        "title": "The identity provider minted a scoped token",
+        "what": "Policy matched Kim, and a token scoped to tickets.read was issued for the ticket API.",
+        "why": "The token is the intersection of what the user may do and what this agent may do.",
+        "matters": "The agent borrows the user's keys, bounded to the user's rights. It can never exceed them."
+      }
+    },
+    {
+      "type": "message",
+      "from": "gw",
+      "to": "api",
+      "label": "call tickets.read",
+      "tone": "ok",
+      "detail": "+ access token",
+      "token": "access token"
+    },
+    {
+      "type": "event",
+      "at": "api",
+      "label": "200 OK",
+      "tone": "ok",
+      "token": "200 OK",
+      "story": {
+        "title": "The ticket API honored the call",
+        "what": "The API validated the token and returned ticket 42.",
+        "why": "The token carried exactly the scope this call required, and nothing more.",
+        "matters": "Access was proven for this one call, not assumed from a standing login."
+      }
+    }
+  ],
+  "subtitle": "Cross App Access: ID-JAG token exchange through an MCP gateway",
+  "tags": [
+    "agentic",
+    "XAA / ID-JAG",
+    "RFC 8693",
+    "RFC 7523"
+  ],
+  "outcome": {
+    "status": "allow",
+    "headline": "✓ ALLOWED: TOKEN ISSUED",
+    "detail": "Policy authorized Kim and minted a token for the ticket API, bounded to what Kim may do.",
+    "caption": "scoped token minted · API returned 200"
+  },
+  "tokens": [
+    {
+      "label": "Delegated access token",
+      "raw": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImV4YW1wbGUta2V5LTEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9vYXV0aDIvdGlja2V0cy1hcyIsInN1YiI6ImtpbUBleGFtcGxlLmNvbSIsImF1ZCI6ImFwaTovL3RpY2tldHMiLCJjaWQiOiJhaS1hZ2VudC03ZjNhIiwic2NwIjpbInRpY2tldHMucmVhZCJdLCJhY3QiOnsic3ViIjoiYWktYWdlbnQtN2YzYSJ9LCJpYXQiOjE3NjcyMjU2MDAsImV4cCI6MTc2NzIyOTIwMH0.REDACTED-SIGNATURE",
+      "show": [
+        "sub",
+        "act",
+        "aud",
+        "iss",
+        "scope",
+        "exp"
+      ],
+      "note": "sub is the user; act.sub is the agent acting on their behalf (RFC 8693 actor claim)."
+    }
+  ]
+}

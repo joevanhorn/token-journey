@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "title": "Sign in to a web app",
+  "actors": [
+    {
+      "id": "user",
+      "label": "User's browser",
+      "short": "BROWSER",
+      "kind": "user"
+    },
+    {
+      "id": "app",
+      "label": "Web app (client)",
+      "short": "APP",
+      "kind": "service"
+    },
+    {
+      "id": "idp",
+      "label": "Identity provider",
+      "short": "IDP",
+      "kind": "idp",
+      "sublabel": "idp.example.com"
+    },
+    {
+      "id": "api",
+      "label": "API",
+      "short": "API",
+      "kind": "resource"
+    }
+  ],
+  "steps": [
+    {
+      "type": "message",
+      "from": "user",
+      "to": "app",
+      "label": "click Sign in",
+      "story": {
+        "title": "The app sent you to sign in",
+        "what": "The app generated a PKCE code_verifier, kept it, and redirected you to the identity provider with its hash (code_challenge).",
+        "why": "The app never sees your password. Only the identity provider authenticates you.",
+        "matters": "PKCE binds the eventual code to this app instance, so an intercepted code is useless."
+      }
+    },
+    {
+      "type": "message",
+      "from": "app",
+      "to": "idp",
+      "label": "/authorize",
+      "tone": "info",
+      "detail": "code_challenge=S256(...)"
+    },
+    {
+      "type": "event",
+      "at": "idp",
+      "label": "authenticates user",
+      "tone": "info",
+      "token": "session",
+      "story": {
+        "title": "You signed in at the identity provider",
+        "what": "You entered credentials (and MFA, if required) on the identity provider's page.",
+        "why": "Authentication happens in one trusted place, under its sign-on policy.",
+        "matters": "Every app gets the same strong sign-in without handling secrets itself."
+      }
+    },
+    {
+      "type": "message",
+      "from": "idp",
+      "to": "app",
+      "label": "redirect ?code=",
+      "tone": "info",
+      "token": "auth code",
+      "return": true
+    },
+    {
+      "type": "message",
+      "from": "app",
+      "to": "idp",
+      "label": "/token",
+      "tone": "info",
+      "detail": "code + code_verifier",
+      "story": {
+        "title": "The app redeemed the code",
+        "what": "The app sent the code plus the original code_verifier to the token endpoint.",
+        "why": "The identity provider checks the verifier against the challenge from step one.",
+        "matters": "Only the app that started the flow can finish it."
+      }
+    },
+    {
+      "type": "event",
+      "at": "idp",
+      "label": "mints tokens",
+      "tone": "ok",
+      "token": "ID + access token"
+    },
+    {
+      "type": "message",
+      "from": "idp",
+      "to": "app",
+      "label": "id_token, access_token",
+      "tone": "ok",
+      "return": true
+    },
+    {
+      "type": "message",
+      "from": "app",
+      "to": "api",
+      "label": "GET /me",
+      "tone": "ok",
+      "detail": "Bearer access_token",
+      "token": "access token",
+      "story": {
+        "title": "The app called the API with your token",
+        "what": "The API validated the access token and returned your profile.",
+        "why": "The token says who you are, which app asked, and what it may do.",
+        "matters": "The API trusts the identity provider's signature, not the app's say-so."
+      }
+    },
+    {
+      "type": "event",
+      "at": "api",
+      "label": "200 OK",
+      "tone": "ok",
+      "token": "200 OK"
+    }
+  ],
+  "subtitle": "OpenID Connect authorization code flow with PKCE",
+  "tags": [
+    "OIDC",
+    "RFC 7636 PKCE"
+  ],
+  "outcome": {
+    "status": "allow",
+    "detail": "The user authenticated at the identity provider and the app received tokens bound to this sign-in.",
+    "caption": "code + verifier redeemed · tokens issued · API returned 200"
+  },
+  "tokens": [
+    {
+      "label": "ID token",
+      "raw": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImV4YW1wbGUta2V5LTEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9vYXV0aDIvZGVmYXVsdCIsInN1YiI6IjAwdS1raW0iLCJhdWQiOiJ3ZWItYXBwLWNsaWVudCIsImVtYWlsIjoia2ltQGV4YW1wbGUuY29tIiwiYW1yIjpbInB3ZCIsIm1mYSJdLCJpYXQiOjE3NjcyMjU2MDAsImV4cCI6MTc2NzIyOTIwMH0.REDACTED-SIGNATURE",
+      "show": [
+        "sub",
+        "email",
+        "aud",
+        "amr",
+        "exp"
+      ],
+      "note": "The ID token is for the app: proof of who signed in."
+    },
+    {
+      "label": "Access token",
+      "raw": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImV4YW1wbGUta2V5LTEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9vYXV0aDIvZGVmYXVsdCIsInN1YiI6ImtpbUBleGFtcGxlLmNvbSIsImF1ZCI6ImFwaTovL2RlZmF1bHQiLCJjaWQiOiJ3ZWItYXBwLWNsaWVudCIsInNjcCI6WyJvcGVuaWQiLCJwcm9maWxlIiwib3JkZXJzLnJlYWQiXSwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3NjcyMjkyMDB9.REDACTED-SIGNATURE",
+      "note": "The access token is for the API: what the app may do on the user's behalf."
+    }
+  ]
+}

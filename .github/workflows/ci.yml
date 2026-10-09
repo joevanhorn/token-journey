@@ -1,0 +1,24 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Examples are up to date
+        run: python3 examples/build_examples.py && git diff --exit-code examples/journeys
+      - name: Node tests (format, validator, adapter, recorder parity)
+        run: npm test
+      - name: Python tests (recorder, live OIDC end-to-end)
+        run: python3 -m unittest discover tests -v
+      - name: Browser render tests
+        run: |
+          pip install playwright
+          python3 -m playwright install --with-deps chromium
+          python3 tests/render_smoke.py

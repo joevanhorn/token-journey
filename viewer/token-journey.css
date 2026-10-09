@@ -1,0 +1,238 @@
+/*
+ * token-journey.css: styles for the Token Journey viewer.
+ *
+ * Everything is scoped under the .tj root class, so the viewer can be dropped into any page
+ * without leaking styles. Theming is done entirely with CSS custom properties:
+ *
+ *   - Dark is the default palette.
+ *   - Light applies automatically under prefers-color-scheme: light, or explicitly with
+ *     data-theme="light" on the .tj element (or any ancestor). data-theme="dark" forces dark.
+ *   - To re-brand, override the --tj-* variables on .tj (see docs/viewer-api.md, "Theming").
+ *
+ * Actor colors come from the actor's `kind` (user, agent, gateway, idp, resource, service),
+ * exposed as .tj-k-<kind>. An actor may also set an explicit `color`, which the viewer writes
+ * inline as --tj-act and wins over the kind default.
+ */
+
+.tj {
+  --tj-bg: #0a0d15;
+  --tj-panel: #101623;
+  --tj-sunken: #0c111c;
+  --tj-line: #26304c;
+  --tj-line-soft: rgba(120, 140, 190, .14);
+  --tj-text: #e8ecf6;
+  --tj-muted: #9aa4c0;
+  --tj-faint: #838eb0;
+
+  /* the three outcome tones used by arrows, markers, the pill and the verdict */
+  --tj-info: #edb24a;     /* in-flight / neutral-important (gold) */
+  --tj-ok: #45db9c;       /* minted, allowed, 200 (mint) */
+  --tj-deny: #ff6e72;     /* refused, no token, 403 (coral) */
+  --tj-info-bg: rgba(237, 178, 74, .16);
+  --tj-ok-bg: rgba(69, 219, 156, .12);
+  --tj-deny-bg: rgba(255, 110, 114, .12);
+  --tj-info-line: rgba(237, 178, 74, .45);
+  --tj-ok-line: rgba(69, 219, 156, .45);
+  --tj-deny-line: rgba(255, 110, 114, .45);
+  --tj-pill-ink: #20180a;
+
+  /* actor kinds */
+  --tj-k-user: #8b93a7;
+  --tj-k-agent: #e6a93c;
+  --tj-k-gateway: #a78bfa;
+  --tj-k-idp: #4d9fff;
+  --tj-k-resource: #26c6da;
+  --tj-k-service: #f472b6;
+
+  --tj-mono: 'JetBrains Mono', 'SFMono-Regular', 'SF Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
+  --tj-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --tj-radius: 11px;
+
+  color-scheme: dark;
+  font-family: var(--tj-sans);
+  color: var(--tj-text);
+  background: var(--tj-panel);
+  border: 1px solid var(--tj-line);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  box-sizing: border-box;
+  line-height: 1.45;
+  min-width: 0;
+}
+.tj *, .tj *::before, .tj *::after { box-sizing: border-box; }
+
+/* Light palette. Two selectors: explicit opt-in, and the OS preference (unless dark is forced). */
+.tj[data-theme="light"], [data-theme="light"] .tj {
+  --tj-bg: #f1ece0; --tj-panel: #faf7f0; --tj-sunken: #ece6d8;
+  --tj-line: #b9ad92; --tj-line-soft: rgba(90, 75, 45, .16);
+  --tj-text: #262119; --tj-muted: #5c5445; --tj-faint: #6b624f;
+  --tj-info: #8a5b12; --tj-ok: #0e6f48; --tj-deny: #b3283a;
+  --tj-info-bg: rgba(200, 140, 30, .14); --tj-ok-bg: rgba(15, 122, 79, .10); --tj-deny-bg: rgba(176, 40, 58, .09);
+  --tj-info-line: rgba(160, 110, 20, .55); --tj-ok-line: rgba(15, 122, 79, .5); --tj-deny-line: rgba(176, 40, 58, .5);
+  --tj-pill-ink: #faf7f0;
+  --tj-k-user: #5f6b82; --tj-k-agent: #b7791f; --tj-k-gateway: #7c5cd6;
+  --tj-k-idp: #2f6fd6; --tj-k-resource: #1596a8; --tj-k-service: #be3c86;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: light) {
+  .tj:not([data-theme="dark"]):not([data-theme="dark"] .tj) {
+    --tj-bg: #f1ece0; --tj-panel: #faf7f0; --tj-sunken: #ece6d8;
+    --tj-line: #b9ad92; --tj-line-soft: rgba(90, 75, 45, .16);
+    --tj-text: #262119; --tj-muted: #5c5445; --tj-faint: #6b624f;
+    --tj-info: #8a5b12; --tj-ok: #0e6f48; --tj-deny: #b3283a;
+    --tj-info-bg: rgba(200, 140, 30, .14); --tj-ok-bg: rgba(15, 122, 79, .10); --tj-deny-bg: rgba(176, 40, 58, .09);
+    --tj-info-line: rgba(160, 110, 20, .55); --tj-ok-line: rgba(15, 122, 79, .5); --tj-deny-line: rgba(176, 40, 58, .5);
+    --tj-pill-ink: #faf7f0;
+    --tj-k-user: #5f6b82; --tj-k-agent: #b7791f; --tj-k-gateway: #7c5cd6;
+    --tj-k-idp: #2f6fd6; --tj-k-resource: #1596a8; --tj-k-service: #be3c86;
+    color-scheme: light;
+  }
+}
+
+/* ── header ─────────────────────────────────────────────────────────── */
+.tj-hd { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 4px; }
+.tj-hd-txt { flex: 1; min-width: 0; }
+.tj-title { margin: 0; font-family: var(--tj-mono); font-size: 13.5px; font-weight: 700; letter-spacing: .01em; }
+.tj-sub { margin: 3px 0 0; color: var(--tj-muted); font-size: 12px; }
+.tj-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.tj-tag { font-family: var(--tj-mono); font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px; color: var(--tj-info); background: var(--tj-info-bg); }
+.tj-status { flex: none; font-family: var(--tj-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--tj-faint); padding-top: 2px; }
+.tj-status.ok { color: var(--tj-ok); } .tj-status.no { color: var(--tj-deny); }
+
+.tj-views { display: inline-flex; margin: 12px 0 14px; padding: 3px; gap: 2px; border: 1px solid var(--tj-line); border-radius: 999px; background: var(--tj-sunken); }
+.tj-views button { font: inherit; font-family: var(--tj-mono); font-size: 11px; letter-spacing: .03em; color: var(--tj-muted);
+  background: transparent; border: 0; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.tj-views button[aria-pressed="true"] { color: var(--tj-info); background: var(--tj-info-bg); }
+.tj-views button:focus-visible, .tj-copy:focus-visible, .tj-link:focus-visible { outline: 2px solid var(--tj-info); outline-offset: 2px; }
+.tj-replay { margin-left: 8px; font: inherit; font-family: var(--tj-mono); font-size: 11px; color: var(--tj-faint); background: none; border: 0; cursor: pointer; padding: 4px 6px; }
+.tj-replay:hover { color: var(--tj-text); }
+
+/* ── narrative view ─────────────────────────────────────────────────── */
+.tj-narr { margin-bottom: 9px; padding: 11px 13px; border-radius: var(--tj-radius);
+  background: color-mix(in srgb, var(--tj-act) 10%, transparent);
+  border-left: 3px solid var(--tj-act);
+  opacity: 0; transform: translateY(6px); transition: opacity .38s ease, transform .38s ease; }
+.tj-narr.in { opacity: 1; transform: none; }
+.tj-narr.skip.in { opacity: .55; }
+.tj-narr-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.tj-chip { flex: none; font-family: var(--tj-mono); font-size: 9.5px; font-weight: 700; letter-spacing: .05em;
+  padding: 2px 7px; border-radius: 6px; color: var(--tj-act); background: color-mix(in srgb, var(--tj-act) 16%, transparent); }
+.tj-narr-ttl { flex: 1; min-width: 0; font-family: var(--tj-mono); font-size: 12.5px; font-weight: 600; }
+.tj-narr-st { flex: none; font-size: 13px; line-height: 1; }
+.tj-narr.done .tj-narr-st { color: var(--tj-ok); }
+.tj-narr.deny .tj-narr-st { color: var(--tj-deny); }
+.tj-narr.skip .tj-narr-st { color: var(--tj-faint); }
+.tj-line { font-size: 12px; line-height: 1.5; color: var(--tj-muted); margin-bottom: 4px; }
+.tj-line:last-child { margin-bottom: 0; }
+.tj-k { display: inline-block; font-family: var(--tj-mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--tj-faint); margin-right: 7px; vertical-align: 1px; }
+.tj-line.w-matters { color: var(--tj-text); }
+.tj-line.w-matters .tj-k { color: var(--tj-act); }
+
+/* actor kind -> accent color (an explicit actor.color is written inline as --tj-act) */
+.tj-k-user { --tj-act: var(--tj-k-user); }
+.tj-k-agent { --tj-act: var(--tj-k-agent); }
+.tj-k-gateway { --tj-act: var(--tj-k-gateway); }
+.tj-k-idp { --tj-act: var(--tj-k-idp); }
+.tj-k-resource { --tj-act: var(--tj-k-resource); }
+.tj-k-service { --tj-act: var(--tj-k-service); }
+
+/* ── technical view: sequence diagram ───────────────────────────────── */
+.tj-seq { position: relative; margin: 0 0 14px; }
+.tj-diagram { position: relative; overflow-x: auto; overflow-y: hidden; }
+.tj-svg { display: block; overflow: visible; }
+.tj-ll { stroke: var(--tj-line-soft); stroke-width: 1.5; }
+.tj-ll.dim { stroke-dasharray: 2 5; opacity: .55; }
+.tj-cap { fill: var(--tj-sunken); stroke: var(--tj-line); }
+.tj-cap.act { stroke: var(--tj-act); }
+.tj-captx { font-family: var(--tj-mono); font-size: 9.5px; letter-spacing: .07em; fill: var(--tj-muted); text-anchor: middle; }
+.tj-captx.act { fill: var(--tj-text); }
+.tj-capsub { font-family: var(--tj-sans); font-size: 8.5px; fill: var(--tj-faint); text-anchor: middle; }
+
+.tj-g { opacity: 0; transition: opacity .42s ease; }
+.tj-g.on { opacity: 1; }
+.tj-arw { stroke-width: 1.6; fill: none; stroke-linecap: round; }
+.tj-arw.draw { transition: stroke-dashoffset .5s cubic-bezier(.5, .05, .2, 1); }
+.tj-g:not(.on) .tj-head { opacity: 0; }
+.tj-head { transition: opacity .3s ease .3s; }
+.tj-ret .tj-arw { stroke-dasharray: 5 4; }
+.tj-lab { font-family: var(--tj-mono); font-size: 10px; fill: var(--tj-muted); text-anchor: middle; }
+.tj-lab.strong { fill: var(--tj-text); }
+.tj-lab.s { font-size: 8.5px; fill: var(--tj-faint); }
+.tj-tone-neutral .tj-arw { stroke: var(--tj-muted); } .tj-tone-neutral .tj-head { fill: var(--tj-muted); }
+.tj-tone-info .tj-arw { stroke: var(--tj-info); }     .tj-tone-info .tj-head { fill: var(--tj-info); }
+.tj-tone-ok .tj-arw { stroke: var(--tj-ok); }         .tj-tone-ok .tj-head { fill: var(--tj-ok); }
+.tj-tone-deny .tj-arw { stroke: var(--tj-deny); }     .tj-tone-deny .tj-head { fill: var(--tj-deny); }
+
+.tj-mk circle { stroke-width: 1.6; fill: var(--tj-sunken); }
+.tj-mk .sym { font-size: 11px; text-anchor: middle; dominant-baseline: middle; font-family: var(--tj-sans); }
+.tj-mk .mlab { font-family: var(--tj-mono); font-size: 10px; fill: var(--tj-muted); }
+.tj-mk .mlab.left { text-anchor: end; }
+.tj-mk.tj-tone-neutral circle { stroke: var(--tj-muted); } .tj-mk.tj-tone-neutral .sym { fill: var(--tj-muted); }
+.tj-mk.tj-tone-info circle { stroke: var(--tj-info); }     .tj-mk.tj-tone-info .sym { fill: var(--tj-info); }
+.tj-mk.tj-tone-ok circle { stroke: var(--tj-ok); }         .tj-mk.tj-tone-ok .sym { fill: var(--tj-ok); }
+.tj-mk.tj-tone-deny circle { stroke: var(--tj-deny); }     .tj-mk.tj-tone-deny .sym { fill: var(--tj-deny); }
+.tj-mk.tj-tone-ok .mlab { fill: var(--tj-ok); } .tj-mk.tj-tone-deny .mlab { fill: var(--tj-deny); }
+
+/* the traveling token pill */
+.tj-pill { position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--tj-mono); font-size: 10px; font-weight: 700; white-space: nowrap; pointer-events: none;
+  padding: 3px 9px; border-radius: 999px; color: var(--tj-pill-ink); background: var(--tj-info);
+  box-shadow: 0 0 0 4px var(--tj-info-bg); opacity: 0;
+  transition: transform .55s cubic-bezier(.5, .05, .2, 1), opacity .25s ease, background .25s ease; }
+.tj-pill.show { opacity: 1; }
+.tj-pill.ok { background: var(--tj-ok); box-shadow: 0 0 0 4px var(--tj-ok-bg); }
+.tj-pill.deny { background: var(--tj-deny); box-shadow: 0 0 0 4px var(--tj-deny-bg); }
+.tj-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .7; }
+.tj-pill.bump { animation: tj-bump .32s ease; }
+@keyframes tj-bump { 40% { filter: brightness(1.25); } }
+
+.tj-foot { margin-top: 6px; }
+.tj-cap-line { display: flex; gap: 7px; font-family: var(--tj-mono); font-size: 11px; color: var(--tj-muted); }
+.tj-cap-line.ok .mk { color: var(--tj-ok); } .tj-cap-line.no .mk { color: var(--tj-deny); }
+
+/* ── verdict, tokens, links ─────────────────────────────────────────── */
+.tj-verdict { border-radius: var(--tj-radius); padding: 12px 14px; margin: 14px 0; border: 1px solid var(--tj-line); display: none; }
+.tj-verdict.show { display: block; animation: tj-rise .3s both; }
+.tj-verdict.ok { border-color: var(--tj-ok-line); background: linear-gradient(180deg, var(--tj-ok-bg), transparent); }
+.tj-verdict.no { border-color: var(--tj-deny-line); background: linear-gradient(180deg, var(--tj-deny-bg), transparent); }
+.tj-vh { font-family: var(--tj-mono); font-weight: 700; letter-spacing: .04em; font-size: 12.5px; }
+.tj-verdict.ok .tj-vh { color: var(--tj-ok); } .tj-verdict.no .tj-vh { color: var(--tj-deny); }
+.tj-vd { margin-top: 5px; font-size: 12px; color: var(--tj-muted); }
+@keyframes tj-rise { from { opacity: 0; transform: translateY(4px); } }
+
+.tj-tokens { display: none; }
+.tj-tokens.show { display: block; }
+.tj-token { border: 1px solid var(--tj-info-line); border-radius: var(--tj-radius); overflow: hidden; background: var(--tj-sunken); margin-bottom: 12px; }
+.tj-token.denied { border-color: var(--tj-deny-line); }
+.tj-th { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--tj-line-soft);
+  font-family: var(--tj-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--tj-faint); }
+.tj-th .key { color: var(--tj-info); }
+.tj-th .aud { margin-left: auto; text-transform: none; letter-spacing: 0; }
+.tj-claims { padding: 10px 12px; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; }
+.tj-ck { font-family: var(--tj-mono); font-size: 11px; color: var(--tj-faint); }
+.tj-cv { font-family: var(--tj-mono); font-size: 11.5px; word-break: break-all; min-width: 0; }
+.tj-scopes { display: flex; gap: 5px; flex-wrap: wrap; }
+.tj-scope { font-size: 10.5px; padding: 1px 7px; border-radius: 5px; background: var(--tj-info-bg); color: var(--tj-info); border: 1px solid var(--tj-info-line); }
+.tj-scope.miss { background: var(--tj-deny-bg); color: var(--tj-deny); border-color: var(--tj-deny-line); text-decoration: line-through; }
+.tj-tnote { padding: 0 12px 10px; font-size: 11.5px; color: var(--tj-muted); }
+.tj-empty { padding: 12px; font-family: var(--tj-mono); font-size: 12px; color: var(--tj-deny); }
+.tj-copy { margin: 0 12px 10px; font: inherit; font-family: var(--tj-mono); font-size: 11px; color: var(--tj-info);
+  background: var(--tj-info-bg); border: 1px solid var(--tj-info-line); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+.tj-links { display: flex; flex-direction: column; gap: 4px; }
+.tj-link { font-family: var(--tj-mono); font-size: 11px; color: var(--tj-muted); text-decoration: none; }
+.tj-link:hover { color: var(--tj-text); }
+
+.tj-error { font-family: var(--tj-mono); font-size: 12px; color: var(--tj-deny); white-space: pre-wrap; }
+
+/* In Narrative view the token cards stay hidden by default (the story is the point); in Technical they show. */
+.tj[data-view="narrative"] .tj-tokens.show { display: none; }
+.tj[data-view="narrative"][data-tokens="always"] .tj-tokens.show { display: block; }
+
+/* Instant render (animate:false or reduced motion): nothing fades or slides, so the final state paints at once. */
+.tj.tj-instant *, .tj.tj-instant .tj-verdict.show { transition: none !important; animation: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tj[data-motion="auto"] .tj-narr, .tj[data-motion="auto"] .tj-g, .tj[data-motion="auto"] .tj-pill,
+  .tj[data-motion="auto"] .tj-arw.draw, .tj[data-motion="auto"] .tj-verdict.show { transition: none; animation: none; }
+}

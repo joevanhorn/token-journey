@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "title": "Orders service calls Billing for the user",
+  "actors": [
+    {
+      "id": "user",
+      "label": "User",
+      "short": "USER",
+      "kind": "user"
+    },
+    {
+      "id": "orders",
+      "label": "Orders service",
+      "short": "ORDERS",
+      "kind": "service"
+    },
+    {
+      "id": "idp",
+      "label": "Authorization server",
+      "short": "AS",
+      "kind": "idp"
+    },
+    {
+      "id": "billing",
+      "label": "Billing API",
+      "short": "BILLING",
+      "kind": "resource"
+    }
+  ],
+  "steps": [
+    {
+      "type": "message",
+      "from": "user",
+      "to": "orders",
+      "label": "POST /checkout",
+      "tone": "info",
+      "detail": "Bearer user token (aud=orders)",
+      "token": "user token",
+      "story": {
+        "title": "You called the Orders service",
+        "what": "Your token is scoped to the Orders service (aud=orders).",
+        "why": "Each token is minted for one audience.",
+        "matters": "Orders can't simply forward your token to Billing; Billing would reject the wrong audience."
+      }
+    },
+    {
+      "type": "message",
+      "from": "orders",
+      "to": "idp",
+      "label": "token exchange",
+      "tone": "info",
+      "detail": "subject_token=user, actor_token=orders",
+      "token": "subject + actor",
+      "story": {
+        "title": "Orders exchanged your token for one Billing will accept",
+        "what": "Orders presented your token as subject_token and its own credentials as actor_token.",
+        "why": "The authorization server decides if Orders may act for you at Billing.",
+        "matters": "Delegation is explicit and policy-checked, not implicit token forwarding."
+      }
+    },
+    {
+      "type": "event",
+      "at": "idp",
+      "label": "mints delegated token",
+      "tone": "ok",
+      "token": "act=orders"
+    },
+    {
+      "type": "message",
+      "from": "idp",
+      "to": "orders",
+      "label": "access_token (aud=billing)",
+      "tone": "ok",
+      "return": true
+    },
+    {
+      "type": "message",
+      "from": "orders",
+      "to": "billing",
+      "label": "POST /charges",
+      "tone": "ok",
+      "detail": "Bearer delegated token",
+      "token": "delegated token",
+      "story": {
+        "title": "Billing saw both of you",
+        "what": "The token's sub is you; its act.sub is the Orders service.",
+        "why": "RFC 8693 records the delegation chain in the act claim.",
+        "matters": "Billing can authorize and audit on both identities: who the charge is for, and which service asked."
+      }
+    },
+    {
+      "type": "event",
+      "at": "billing",
+      "label": "201 Created",
+      "tone": "ok",
+      "token": "201"
+    }
+  ],
+  "subtitle": "OAuth 2.0 Token Exchange (RFC 8693) with delegation",
+  "tags": [
+    "RFC 8693",
+    "delegation",
+    "act claim"
+  ],
+  "outcome": {
+    "status": "allow",
+    "detail": "Orders received a Billing-audience token that names both the user and itself.",
+    "caption": "subject + actor exchanged · delegated token · Billing returned 201"
+  },
+  "tokens": [
+    {
+      "label": "Delegated token",
+      "raw": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImV4YW1wbGUta2V5LTEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FzLmV4YW1wbGUuY29tIiwic3ViIjoia2ltQGV4YW1wbGUuY29tIiwiYXVkIjoiYmlsbGluZyIsInNjb3BlIjoiY2hhcmdlcy5jcmVhdGUiLCJhY3QiOnsic3ViIjoib3JkZXJzLXNlcnZpY2UifSwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3NjcyMjU5MDB9.REDACTED-SIGNATURE",
+      "show": [
+        "sub",
+        "act",
+        "aud",
+        "scope",
+        "exp"
+      ],
+      "note": "Short-lived (5 minutes): exchanged tokens should be."
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "file": "agentic-xaa-allow.json",
+    "title": "Agent reads a ticket for Kim",
+    "subtitle": "Cross App Access: ID-JAG token exchange through an MCP gateway",
+    "status": "allow"
+  },
+  {
+    "file": "agentic-xaa-deny.json",
+    "title": "Agent tries to read a ticket for Frank",
+    "subtitle": "Cross App Access: ID-JAG token exchange through an MCP gateway",
+    "status": "deny"
+  },
+  {
+    "file": "agentic-xaa-refused.json",
+    "title": "Agent tries to update a ticket for Susan",
+    "subtitle": "Cross App Access: ID-JAG token exchange through an MCP gateway",
+    "status": "refused"
+  },
+  {
+    "file": "oidc-auth-code-pkce.json",
+    "title": "Sign in to a web app",
+    "subtitle": "OpenID Connect authorization code flow with PKCE",
+    "status": "allow"
+  },
+  {
+    "file": "rfc8693-token-exchange.json",
+    "title": "Orders service calls Billing for the user",
+    "subtitle": "OAuth 2.0 Token Exchange (RFC 8693) with delegation",
+    "status": "allow"
+  },
+  {
+    "file": "client-credentials.json",
+    "title": "Nightly job reads the inventory",
+    "subtitle": "OAuth 2.0 client credentials grant (machine to machine)",
+    "status": "allow"
+  },
+  {
+    "file": "mcp-authorization-discovery.json",
+    "title": "An MCP client connects to a protected server",
+    "subtitle": "MCP authorization: RFC 9728 discovery, dynamic client registration, auth code + PKCE",
+    "status": "allow"
+  }
+]

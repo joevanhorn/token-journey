@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/OWNER/token-journey/schema/journey.schema.json",
+  "title": "Token Journey trace",
+  "description": "One authentication/authorization flow, described as actors, ordered steps, the tokens involved and the outcome. Rendered by viewer/token-journey.js. Reference: docs/journey-format.md.",
+  "type": "object",
+  "required": ["version", "actors", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "title": { "type": "string", "description": "Headline shown above the journey." },
+    "subtitle": { "type": "string", "description": "One line of context, e.g. the protocol or grant type." },
+    "tags": { "type": "array", "items": { "type": "string" }, "description": "Short chips, e.g. [\"agentic\", \"RFC 8693\"]." },
+    "actors": {
+      "type": "array", "minItems": 2,
+      "description": "Participants, in left-to-right lane order for the sequence diagram.",
+      "items": {
+        "type": "object", "required": ["id", "label"], "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "description": "Referenced by steps (from, to, at)." },
+          "label": { "type": "string", "description": "Full name, shown on narrative chips and tooltips." },
+          "short": { "type": "string", "description": "Lane cap text in the diagram, e.g. \"IDP\". Defaults to label." },
+          "sublabel": { "type": "string", "description": "Optional second line under the lane cap, e.g. a hostname." },
+          "kind": { "enum": ["user", "agent", "gateway", "idp", "resource", "service"], "description": "Picks the accent color." },
+          "color": { "type": "string", "description": "Any CSS color; overrides the kind color." },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "steps": {
+      "type": "array", "minItems": 1,
+      "description": "Ordered steps. Each one is a row in the diagram.",
+      "items": {
+        "type": "object", "required": ["type", "label"], "additionalProperties": false,
+        "properties": {
+          "type": { "enum": ["message", "event"], "description": "message = an arrow between two actors; event = something that happens at one actor (minting, a policy decision)." },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "at": { "type": "string" },
+          "label": { "type": "string", "description": "Short text on the arrow or next to the marker." },
+          "detail": { "type": "string", "description": "Smaller second line on a message arrow, e.g. the grant_type." },
+          "tone": { "enum": ["neutral", "info", "ok", "deny"], "description": "neutral = plain, info = in flight, ok = success, deny = refused." },
+          "token": { "type": "string", "description": "If set, the token pill shows this text and travels along the step (message) or morphs in place (event)." },
+          "symbol": { "type": "string", "description": "Event marker glyph. Defaults by tone." },
+          "return": { "type": "boolean", "description": "Draw as a dashed response arrow." },
+          "note": { "type": "string", "description": "Tooltip with extra detail (raw request, policy id...)." },
+          "story": {
+            "type": "object", "required": ["title"], "additionalProperties": false,
+            "description": "If present, this step becomes a card in the Narrative view.",
+            "properties": {
+              "title": { "type": "string" },
+              "what": { "type": "string", "description": "What happened." },
+              "why": { "type": "string", "description": "Why it happened." },
+              "matters": { "type": "string", "description": "Why it matters." },
+              "status": { "enum": ["done", "deny", "skip"] },
+              "actor": { "type": "string", "description": "Actor id for the card; defaults to the step's at/from." }
+            }
+          }
+        },
+        "allOf": [
+          { "if": { "properties": { "type": { "const": "message" } } }, "then": { "required": ["from", "to"] } },
+          { "if": { "properties": { "type": { "const": "event" } } }, "then": { "required": ["at"] } }
+        ]
+      }
+    },
+    "outcome": {
+      "type": "object", "required": ["status"], "additionalProperties": false,
+      "properties": {
+        "status": { "enum": ["allow", "deny", "refused"], "description": "allow = succeeded; deny = no token issued; refused = token issued but the resource rejected the call." },
+        "headline": { "type": "string" },
+        "detail": { "type": "string" },
+        "caption": { "type": "string", "description": "One-line summary under the diagram." }
+      }
+    },
+    "tokens": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string" },
+          "raw": { "type": "string", "description": "Compact JWT. Decoded client-side, never verified. Recorders redact the signature by default." },
+          "claims": { "type": "object", "description": "Use instead of raw for opaque tokens, or to override decoding." },
+          "show": { "type": "array", "items": { "type": "string" }, "description": "Claims to display, in order. \"scope\" renders scp/scope as chips." },
+          "missing": { "type": "array", "items": { "type": "string" }, "description": "Scopes the call needed but the token lacks; shown struck through." },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": { "type": "object", "required": ["href"], "additionalProperties": false,
+        "properties": { "label": { "type": "string" }, "href": { "type": "string", "pattern": "^https?://" } } }
+    }
+  }
+}

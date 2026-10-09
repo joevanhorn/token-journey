@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "title": "Agent tries to read a ticket for Frank",
+  "actors": [
+    {
+      "id": "user",
+      "label": "Frank (user)",
+      "short": "USER",
+      "kind": "user"
+    },
+    {
+      "id": "agent",
+      "label": "AI agent",
+      "short": "AGENT",
+      "kind": "agent",
+      "description": "An MCP client, e.g. a coding assistant"
+    },
+    {
+      "id": "gw",
+      "label": "MCP gateway",
+      "short": "GATEWAY",
+      "kind": "gateway",
+      "description": "Brokers tokens for the agent"
+    },
+    {
+      "id": "idp",
+      "label": "Identity provider",
+      "short": "IDP",
+      "kind": "idp",
+      "sublabel": "org + resource AS"
+    },
+    {
+      "id": "api",
+      "label": "Ticket API",
+      "short": "API",
+      "kind": "resource",
+      "sublabel": "MCP server"
+    }
+  ],
+  "steps": [
+    {
+      "type": "message",
+      "from": "user",
+      "to": "agent",
+      "label": "ask agent",
+      "detail": "\"read ticket 42\"",
+      "story": {
+        "title": "You asked the agent",
+        "what": "Frank asked the agent to work with ticket 42.",
+        "why": "The agent has no rights of its own here. It acts strictly on Frank's behalf.",
+        "matters": "Every agent action traces back to a real person and inherits that person's limits."
+      }
+    },
+    {
+      "type": "message",
+      "from": "agent",
+      "to": "gw",
+      "label": "tools/call",
+      "tone": "info",
+      "detail": "tickets.read"
+    },
+    {
+      "type": "message",
+      "from": "gw",
+      "to": "idp",
+      "label": "ID-JAG request",
+      "tone": "info",
+      "detail": "grant=token-exchange",
+      "token": "user ⊕ agent",
+      "story": {
+        "title": "The gateway brokered the request to the identity provider",
+        "what": "The gateway presented Frank's identity and the agent's own credentials, asking for an Identity Assertion JWT (ID-JAG).",
+        "why": "An agent can't mint its own access. Only the identity provider issues tokens, and only after evaluating policy.",
+        "matters": "The exchange is the checkpoint: every agent action passes through policy before it can touch a resource."
+      }
+    },
+    {
+      "type": "event",
+      "at": "idp",
+      "label": "mints ID-JAG",
+      "tone": "info",
+      "token": "ID-JAG"
+    },
+    {
+      "type": "message",
+      "from": "gw",
+      "to": "idp",
+      "label": "token exchange",
+      "tone": "info",
+      "detail": "grant=jwt-bearer"
+    },
+    {
+      "type": "event",
+      "at": "idp",
+      "label": "no matching rule",
+      "tone": "deny",
+      "token": "DENIED",
+      "story": {
+        "title": "The identity provider refused: no token",
+        "what": "No access-policy rule for the ticket API matched Frank, so nothing was minted.",
+        "why": "Frank isn't entitled to tickets, and the agent only ever borrows Frank's rights.",
+        "matters": "The agent can't do what the user can't. The denial happens at the identity provider, before the API is ever reached.",
+        "status": "deny"
+      }
+    },
+    {
+      "type": "message",
+      "from": "idp",
+      "to": "gw",
+      "label": "no token",
+      "tone": "deny",
+      "return": true
+    },
+    {
+      "type": "event",
+      "at": "api",
+      "label": "never reached",
+      "tone": "neutral",
+      "symbol": "◦",
+      "story": {
+        "title": "The ticket API was never called",
+        "what": "With no token, the call stopped at the identity provider.",
+        "why": "There was nothing to present to the API.",
+        "matters": "The resource is not the first line of defense. Policy is.",
+        "status": "skip"
+      }
+    }
+  ],
+  "subtitle": "Cross App Access: ID-JAG token exchange through an MCP gateway",
+  "tags": [
+    "agentic",
+    "XAA / ID-JAG",
+    "RFC 8693",
+    "RFC 7523"
+  ],
+  "outcome": {
+    "status": "deny",
+    "headline": "✕ BLOCKED: NO TOKEN",
+    "detail": "Frank matched no rule at the exchange, so no token was issued. The agent can't do what the user can't.",
+    "caption": "no rule matched at the exchange · no token · API never reached"
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "title": "An MCP client connects to a protected server",
+  "actors": [
+    {
+      "id": "client",
+      "label": "MCP client (agent)",
+      "short": "CLIENT",
+      "kind": "agent"
+    },
+    {
+      "id": "server",
+      "label": "MCP server",
+      "short": "SERVER",
+      "kind": "resource"
+    },
+    {
+      "id": "as",
+      "label": "Authorization server",
+      "short": "AS",
+      "kind": "idp"
+    },
+    {
+      "id": "user",
+      "label": "User's browser",
+      "short": "BROWSER",
+      "kind": "user"
+    }
+  ],
+  "steps": [
+    {
+      "type": "message",
+      "from": "client",
+      "to": "server",
+      "label": "initialize",
+      "tone": "neutral",
+      "detail": "no token",
+      "story": {
+        "title": "The client tried to connect",
+        "what": "The MCP client sent initialize without a token.",
+        "why": "It doesn't yet know this server needs authorization.",
+        "matters": "Discovery starts from a plain request; nothing is preconfigured."
+      }
+    },
+    {
+      "type": "message",
+      "from": "server",
+      "to": "client",
+      "label": "401 + WWW-Authenticate",
+      "tone": "deny",
+      "detail": "resource_metadata=...",
+      "return": true,
+      "story": {
+        "title": "The server challenged it",
+        "what": "The server answered 401 with a pointer to its protected-resource metadata.",
+        "why": "RFC 9728 lets a resource advertise which authorization server protects it.",
+        "matters": "If a server skips this challenge, discovery-driven clients never start the auth flow.",
+        "status": "deny"
+      }
+    },
+    {
+      "type": "message",
+      "from": "client",
+      "to": "server",
+      "label": "GET protected-resource metadata",
+      "tone": "info"
+    },
+    {
+      "type": "message",
+      "from": "client",
+      "to": "as",
+      "label": "register client",
+      "tone": "info",
+      "detail": "POST /register (RFC 7591)",
+      "token": "client metadata",
+      "story": {
+        "title": "The client registered itself",
+        "what": "The client registered dynamically and received a client_id.",
+        "why": "Agents meet servers at runtime; pre-registration doesn't scale.",
+        "matters": "The authorization server still decides which redirect URIs and grants it allows."
+      }
+    },
+    {
+      "type": "message",
+      "from": "client",
+      "to": "user",
+      "label": "open browser",
+      "tone": "info",
+      "detail": "/authorize + PKCE"
+    },
+    {
+      "type": "message",
+      "from": "user",
+      "to": "as",
+      "label": "sign in + consent",
+      "tone": "info",
+      "token": "user session",
+      "story": {
+        "title": "You signed in and approved",
+        "what": "You authenticated at the authorization server and consented to the client's access.",
+        "why": "The agent acts with your identity, so you authorize it.",
+        "matters": "The agent never handles your credentials."
+      }
+    },
+    {
+      "type": "event",
+      "at": "as",
+      "label": "mints token",
+      "tone": "ok",
+      "token": "access token"
+    },
+    {
+      "type": "message",
+      "from": "as",
+      "to": "client",
+      "label": "code -> token",
+      "tone": "ok",
+      "return": true
+    },
+    {
+      "type": "message",
+      "from": "client",
+      "to": "server",
+      "label": "tools/list",
+      "tone": "ok",
+      "detail": "Bearer access_token",
+      "token": "access token",
+      "story": {
+        "title": "The client connected with a token",
+        "what": "The MCP server accepted the token and listed its tools.",
+        "why": "The token's audience is this server (RFC 8707 resource indicator).",
+        "matters": "One server's token can't be replayed against another."
+      }
+    },
+    {
+      "type": "event",
+      "at": "server",
+      "label": "tools listed",
+      "tone": "ok",
+      "token": "200 OK"
+    }
+  ],
+  "subtitle": "MCP authorization: RFC 9728 discovery, dynamic client registration, auth code + PKCE",
+  "tags": [
+    "MCP",
+    "RFC 9728",
+    "RFC 7591 DCR",
+    "agentic"
+  ],
+  "outcome": {
+    "status": "allow",
+    "detail": "Discovery, registration and sign-in completed; the client holds a token for this MCP server only.",
+    "caption": "challenge → discovery → DCR → auth code → token · tools listed"
+  },
+  "tokens": [
+    {
+      "label": "Access token",
+      "raw": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImV4YW1wbGUta2V5LTEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FzLmV4YW1wbGUuY29tIiwic3ViIjoia2ltQGV4YW1wbGUuY29tIiwiYXVkIjoiaHR0cHM6Ly9tY3AuZXhhbXBsZS5jb20iLCJjbGllbnRfaWQiOiJkY3ItNGYxYyIsInNjb3BlIjoibWNwOnRvb2xzIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3NjcyMjkyMDB9.REDACTED-SIGNATURE",
+      "show": [
+        "sub",
+        "aud",
+        "client_id",
+        "scope",
+        "exp"
+      ]
+    }
+  ]
+}

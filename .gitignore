@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.egg-info/
+node_modules/
+tests/.shots/
+examples/live-oidc/.env
+.DS_Store

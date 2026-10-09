@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "token-journey"
+version = "1.0.0"
+description = "Record OAuth/OIDC and agentic token flows as Token Journey traces."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+dependencies = []
+
+[tool.setuptools]
+packages = ["token_journey"]

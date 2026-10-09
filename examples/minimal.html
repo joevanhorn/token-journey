@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- The smallest useful embed: one inline journey, rendered in the Narrative view. Open via a local server. -->
+<meta charset="utf-8">
+<title>Token Journey: minimal embed</title>
+<link rel="stylesheet" href="../viewer/token-journey.css">
+<div id="journey" style="max-width:760px;margin:24px auto"></div>
+<script src="../viewer/token-journey.js"></script>
+<script>
+  TokenJourney.render(document.getElementById('journey'), {
+    version: 1,
+    title: 'Nightly job reads the inventory',
+    subtitle: 'OAuth 2.0 client credentials',
+    actors: [
+      { id: 'job', label: 'Batch job', short: 'JOB', kind: 'service' },
+      { id: 'as', label: 'Authorization server', short: 'AS', kind: 'idp' },
+      { id: 'api', label: 'Inventory API', short: 'API', kind: 'resource' }
+    ],
+    steps: [
+      { type: 'message', from: 'job', to: 'as', label: '/token', detail: 'client_credentials', tone: 'info', token: 'client assertion',
+        story: { title: 'The job authenticated as itself', what: 'It signed a JWT with its private key.', why: 'No user is involved.', matters: 'No shared secret to leak.' } },
+      { type: 'event', at: 'as', label: 'mints token', tone: 'ok', token: 'access token' },
+      { type: 'message', from: 'job', to: 'api', label: 'GET /inventory', tone: 'ok', token: 'access token',
+        story: { title: 'The API saw a machine, not a person', what: 'The token subject is the client itself.', matters: 'Grant machine tokens narrowly.' } },
+      { type: 'event', at: 'api', label: '200 OK', tone: 'ok', token: '200 OK' }
+    ],
+    outcome: { status: 'allow', caption: 'client authenticated · token minted · API returned 200' }
+  }, { view: 'narrative' });
+</script>

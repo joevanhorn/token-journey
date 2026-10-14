@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/OWNER/token-journey/schema/journey.schema.json",
+  "$id": "https://raw.githubusercontent.com/joevanhorn/token-journey/main/schema/journey.schema.json",
   "title": "Token Journey trace",
   "description": "One authentication/authorization flow, described as actors, ordered steps, the tokens involved and the outcome. Rendered by viewer/token-journey.js. Reference: docs/journey-format.md.",
   "type": "object",

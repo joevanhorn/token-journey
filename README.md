@@ -33,7 +33,7 @@ authorization code + PKCE, client credentials, MCP authorization discovery, or s
 ## Try it in 30 seconds
 
 ```bash
-git clone https://github.com/OWNER/token-journey && cd token-journey
+git clone https://github.com/joevanhorn/token-journey && cd token-journey
 python3 -m http.server 8000
 # open http://localhost:8000/examples/
 ```
